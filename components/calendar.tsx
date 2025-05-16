@@ -11,7 +11,7 @@ import {
   isSameMonth,
   isSameDay,
 } from "date-fns"
-import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search, Calendar as CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -47,6 +47,7 @@ export function Calendar({
     description: "",
   })
   const [isAddEventOpen, setIsAddEventOpen] = useState(false)
+  const [isMiniCalendarOpen, setIsMiniCalendarOpen] = useState(false)
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
@@ -92,6 +93,10 @@ export function Calendar({
         </div>
         <div className="flex items-center gap-2">
           <MonthSelector currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} />
+          <Button variant="outline" onClick={() => setIsMiniCalendarOpen(true)}>
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Calendar
+          </Button>
           <Button variant="outline" onClick={goToToday}>
             Today
           </Button>
@@ -101,10 +106,10 @@ export function Calendar({
           <Button variant="ghost" size="icon" onClick={nextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <div className="relative">
+          {/* <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input type="search" placeholder="Search..." className="w-[200px] pl-8" />
-          </div>
+          </div> */}
           <Button variant="ghost" size="icon" onClick={toggleEventsSidebar} className="md:hidden">
             <CalendarDays className="h-5 w-5" />
           </Button>
@@ -112,14 +117,14 @@ export function Calendar({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="hidden md:block w-48 border-r border-border p-2">
+        {/* <div className="hidden md:block w-48 border-r border-border p-2">
           <MiniCalendar
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             currentMonth={currentMonth}
             setCurrentMonth={setCurrentMonth}
           />
-        </div>
+        </div> */}
 
         <div className="flex-1">
           <CalendarHeader />
@@ -170,7 +175,7 @@ export function Calendar({
       </div>
 
       <Button
-        className="absolute bottom-4 right-4 rounded-full h-12 w-12 shadow-lg"
+        className="absolute bottom-4 right-4 rounded-full h-12 w-12 shadow-lg md:hidden"
         onClick={() => setIsAddEventOpen(true)}
       >
         <Plus className="h-6 w-6" />
@@ -213,6 +218,22 @@ export function Calendar({
           <div className="flex justify-end">
             <Button onClick={handleAddEvent}>Add Event</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMiniCalendarOpen} onOpenChange={setIsMiniCalendarOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Date</DialogTitle>
+          </DialogHeader>
+          <div className="hidden md:block border-r border-border p-2">
+          <MiniCalendar
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            currentMonth={currentMonth}
+            setCurrentMonth={setCurrentMonth}
+          />
+        </div>
         </DialogContent>
       </Dialog>
     </div>
