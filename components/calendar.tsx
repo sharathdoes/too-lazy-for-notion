@@ -10,10 +10,12 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
+  startOfWeek,
+  endOfWeek,
 } from "date-fns"
-import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search, Calendar as CalendarIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search, Calendar as CalendarIcon, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle,DialogDescription} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -48,6 +50,7 @@ export function Calendar({
   })
   const [isAddEventOpen, setIsAddEventOpen] = useState(false)
   const [isMiniCalendarOpen, setIsMiniCalendarOpen] = useState(false)
+  const [isHelpOpen, setIsHelpOpen] = useState(true)
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
@@ -58,7 +61,12 @@ export function Calendar({
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  // Get the start of the week containing the first day of the month
+  const calendarStart = startOfWeek(monthStart)
+  // Get the end of the week containing the last day of the month  
+  const calendarEnd = endOfWeek(monthEnd)
+  // Get all days between start and end
+  const daysInMonth = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   const handleAddEvent = () => {
     if (newEvent.title.trim() === "") return
@@ -181,6 +189,13 @@ export function Calendar({
         <Plus className="h-6 w-6" />
       </Button>
 
+      <Button
+        className="absolute bottom-20 right-4 rounded-full h-12 w-12 shadow-lg bg-red-500 hover:bg-red-600 text-white"
+        onClick={() => setIsHelpOpen(true)}
+      >
+        <HelpCircle className="h-6 w-6" />
+      </Button>
+
       <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
         <DialogContent>
           <DialogHeader>
@@ -227,13 +242,26 @@ export function Calendar({
             <DialogTitle>Select Date</DialogTitle>
           </DialogHeader>
           <div className="hidden md:block border-r border-border p-2">
-          <MiniCalendar
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            currentMonth={currentMonth}
-            setCurrentMonth={setCurrentMonth}
-          />
-        </div>
+            <MiniCalendar
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>How it works</DialogTitle>
+            <DialogDescription>
+              Learn how to use the calendar effectively
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p>To add a new event, right-click on any day in the calendar.</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
