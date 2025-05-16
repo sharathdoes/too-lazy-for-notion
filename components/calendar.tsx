@@ -1,0 +1,220 @@
+"use client"
+
+import { useState } from "react"
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+} from "date-fns"
+import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import type { Event } from "@/lib/types"
+import { cn } from "@/lib/utils"
+import { CalendarHeader } from "@/components/calendar-header"
+import { MonthSelector } from "@/components/month-selector"
+import { MiniCalendar } from "@/components/mini-calendar"
+
+interface CalendarProps {
+  selectedDate: Date
+  setSelectedDate: (date: Date) => void
+  events: Event[]
+  addEvent: (event: Event) => void
+  toggleNotesSidebar: () => void
+  toggleEventsSidebar: () => void
+}
+
+export function Calendar({
+  selectedDate,
+  setSelectedDate,
+  events,
+  addEvent,
+  toggleNotesSidebar,
+  toggleEventsSidebar,
+}: CalendarProps) {
+  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()))
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    time: "",
+    description: "",
+  })
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false)
+
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
+  const goToToday = () => {
+    setCurrentMonth(startOfMonth(new Date()))
+    setSelectedDate(new Date())
+  }
+
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+
+  const handleAddEvent = () => {
+    if (newEvent.title.trim() === "") return
+
+    const event: Event = {
+      id: crypto.randomUUID(),
+      title: newEvent.title,
+      time: newEvent.time,
+      description: newEvent.description,
+      date: format(selectedDate, "yyyy-MM-dd"),
+      completed: false,
+    }
+
+    addEvent(event)
+    setNewEvent({ title: "", time: "", description: "" })
+    setIsAddEventOpen(false)
+  }
+
+  const hasEventOnDate = (date: Date) => {
+    const dateString = format(date, "yyyy-MM-dd")
+    return events.some((event) => event.date === dateString)
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={toggleNotesSidebar} className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">{format(currentMonth, "MMMM yyyy")}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <MonthSelector currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} />
+          <Button variant="outline" onClick={goToToday}>
+            Today
+          </Button>
+          <Button variant="ghost" size="icon" onClick={prevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={nextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input type="search" placeholder="Search..." className="w-[200px] pl-8" />
+          </div>
+          <Button variant="ghost" size="icon" onClick={toggleEventsSidebar} className="md:hidden">
+            <CalendarDays className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className="hidden md:block w-48 border-r border-border p-2">
+          <MiniCalendar
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            currentMonth={currentMonth}
+            setCurrentMonth={setCurrentMonth}
+          />
+        </div>
+
+        <div className="flex-1">
+          <CalendarHeader />
+          <div className="grid grid-cols-7 h-[calc(100%-2rem)]">
+            {daysInMonth.map((day, i) => {
+              const isSelected = isSameDay(day, selectedDate)
+              const hasEvent = hasEventOnDate(day)
+
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "border border-border min-h-[100px] p-2 relative",
+                    !isSameMonth(day, currentMonth) && "bg-muted/20 text-muted-foreground",
+                  )}
+                  onClick={() => {
+                    setSelectedDate(day)
+                    // Only toggle sidebar on mobile
+                    if (window.innerWidth < 768) {
+                      toggleEventsSidebar()
+                    }
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault()
+                    setSelectedDate(day)
+                    setIsAddEventOpen(true)
+                  }}
+                >
+                  <div
+                    className={cn(
+                      "flex justify-center items-center w-8 h-8 rounded-full",
+                      isSelected && "bg-primary text-primary-foreground",
+                    )}
+                  >
+                    {format(day, "d")}
+                  </div>
+
+                  {hasEvent && (
+                    <div className="absolute bottom-1 left-1 right-1">
+                      <div className="h-1 w-1 rounded-full bg-primary mx-auto"></div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <Button
+        className="absolute bottom-4 right-4 rounded-full h-12 w-12 shadow-lg"
+        onClick={() => setIsAddEventOpen(true)}
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
+
+      <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Event for {format(selectedDate, "MMMM d, yyyy")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                placeholder="Event title"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={newEvent.time}
+                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                placeholder="Event description"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleAddEvent}>Add Event</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
