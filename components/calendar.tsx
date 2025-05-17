@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   format,
   addMonths,
@@ -15,7 +15,7 @@ import {
 } from "date-fns"
 import { ChevronLeft, ChevronRight, Menu, CalendarDays, Plus, Search, Calendar as CalendarIcon, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle,DialogDescription} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -50,7 +50,42 @@ export function Calendar({
   })
   const [isAddEventOpen, setIsAddEventOpen] = useState(false)
   const [isMiniCalendarOpen, setIsMiniCalendarOpen] = useState(false)
-  const [isHelpOpen, setIsHelpOpen] = useState(true)
+
+  // Help dialog state and "Don't ask again" logic
+  const [isHelpOpen, setIsHelpOpen] = useState(false)
+  const [dontAskAgain, setDontAskAgain] = useState(false)
+
+  // On mount, check localStorage for "dontAskAgain" flag
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dontAsk = localStorage.getItem("calendarHelpDontAskAgain")
+      if (dontAsk === "true") {
+        setDontAskAgain(true)
+        setIsHelpOpen(false)
+      } else {
+        setIsHelpOpen(true)
+      }
+    }
+  }, [])
+
+  // When user checks "Don't ask again", persist to localStorage and block dialog
+  const handleDontAskAgainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked
+    setDontAskAgain(checked)
+    if (checked) {
+      localStorage.setItem("calendarHelpDontAskAgain", "true")
+      setIsHelpOpen(false)
+    } else {
+      localStorage.removeItem("calendarHelpDontAskAgain")
+    }
+  }
+
+  // If blocked, prevent opening help dialog
+  const handleOpenHelp = () => {
+    if (!dontAskAgain) {
+      setIsHelpOpen(true)
+    }
+  }
 
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
@@ -191,7 +226,9 @@ export function Calendar({
 
       <Button
         className="absolute bottom-20 right-4 rounded-full h-12 w-12 shadow-lg bg-red-500 hover:bg-red-600 text-white"
-        onClick={() => setIsHelpOpen(true)}
+        onClick={handleOpenHelp}
+        disabled={dontAskAgain}
+        title={dontAskAgain ? "Help dialog is blocked (Don't ask again)" : undefined}
       >
         <HelpCircle className="h-6 w-6" />
       </Button>
@@ -261,6 +298,18 @@ export function Calendar({
           </DialogHeader>
           <div className="py-4">
             <p>To add a new event, right-click on any day in the calendar.</p>
+            <div className="flex items-center mt-4">
+              <input
+                id="dont-ask-again"
+                type="checkbox"
+                checked={dontAskAgain}
+                onChange={handleDontAskAgainChange}
+                className="mr-2"
+              />
+              <label htmlFor="dont-ask-again" className="text-sm select-none cursor-pointer">
+                Don't show again
+              </label>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
